@@ -1,4 +1,4 @@
-tabIndent = {
+var tabIndent = {
 	version: '0.1.8',
 	config: {
 		tab: '\t'
@@ -9,7 +9,7 @@ tabIndent = {
 			var tabWidth = tab.length;
 			if (e.keyCode === 9) {
 				e.preventDefault();
-				var	currentStart = this.selectionStart,
+				var currentStart = this.selectionStart,
 					currentEnd = this.selectionEnd;
 				if (e.shiftKey === false) {
 					// Normal Tab Behaviour
@@ -20,7 +20,7 @@ tabIndent = {
 						this.selectionEnd = currentEnd + tabWidth;
 					} else {
 						// Iterating through the startIndices, if the index falls within selectionStart and selectionEnd, indent it there.
-						var	startIndices = tabIndent.findStartIndices(this),
+						var startIndices = tabIndent.findStartIndices(this),
 							l = startIndices.length,
 							newStart = undefined,
 							newEnd = undefined,
@@ -55,10 +55,16 @@ tabIndent = {
 							this.value = this.value.substring(0, currentStart) + this.value.substr(currentStart + tabWidth);
 							this.selectionStart = currentStart;
 							this.selectionEnd = currentEnd - tabWidth;
+						} else if (/\n[ ]+$/.test(this.value.substr(currentStart - tabWidth, tabWidth))) {
+							// However, if the selection is at the start with a line and spaces, remove spaces
+							var newline = this.value.substring(0, currentStart).lastIndexOf('\n') + 1;
+							this.value = this.value.substring(0, newline) + this.value.substr(currentStart);
+							this.selectionStart = newline;
+							this.selectionEnd = currentEnd - currentStart + newline;
 						}
 					} else {
 						// Iterating through the startIndices, if the index falls within selectionStart and selectionEnd, remove an indent from that row
-						var	startIndices = tabIndent.findStartIndices(this),
+						var startIndices = tabIndent.findStartIndices(this),
 							l = startIndices.length,
 							newStart = undefined,
 							newEnd = undefined,
@@ -73,7 +79,15 @@ tabIndent = {
 									// Remove a tab
 									this.value = this.value.slice(0, startIndices[l]) + this.value.slice(startIndices[l] + tabWidth);
 									affectedRows++;
-								} else {}	// Do nothing
+								} else if (this.value.substr(startIndices[l], tabWidth) == tab) {
+									// Remove a tab
+									this.value = this.value.slice(0, startIndices[l]) + this.value.slice(startIndices[l] + tabWidth);
+									affectedRows++;
+								} else if (/^[ ]+/.test(this.value.substr(startIndices[l], tabWidth))) {
+									// If line start with a line and spaces, remove spaces
+									this.value = this.value.slice(0, startIndices[l]) + this.value.slice(startIndices[l]).replace(/^[ ]+/, '');
+									affectedRows++;
+								} else {} // Do nothing
 
 								newStart = startIndices[l];
 								if (!newEnd) newEnd = (startIndices[l+1] ? startIndices[l+1] - 1 : 'end');
@@ -84,10 +98,10 @@ tabIndent = {
 						this.selectionEnd = (newEnd !== 'end' ? newEnd - (affectedRows * tabWidth) : this.value.length);
 					}
 				}
-			} else if (e.keyCode === 27) {	// Esc
+			} else if (e.keyCode === 27) {  // Esc
 				tabIndent.events.disable(e);
-			} else if (e.keyCode === 13 && e.shiftKey === false) {	// Enter
-				var	self = tabIndent,
+			} else if (e.keyCode === 13 && e.shiftKey === false) {  // Enter
+				var self = tabIndent,
 					cursorPos = this.selectionStart,
 					startIndices = self.findStartIndices(this),
 					numStartIndices = startIndices.length,
@@ -133,7 +147,7 @@ tabIndent = {
 			tabIndent.remove(e.target);
 		},
 		focus: function() {
-			var	self = tabIndent,
+			var self = tabIndent,
 				el = this,
 				delayedRefocus = setTimeout(function() {
 					var classes = (el.getAttribute('class') || '').split(' '),
@@ -228,14 +242,14 @@ tabIndent = {
 	},
 	isMultiLine: function(el) {
 		// Extract the selection
-		var	snippet = el.value.slice(el.selectionStart, el.selectionEnd),
+		var snippet = el.value.slice(el.selectionStart, el.selectionEnd),
 			nlRegex = new RegExp(/\n/);
 
 		if (nlRegex.test(snippet)) return true;
 		else return false;
 	},
 	findStartIndices: function(el) {
-		var	text = el.value,
+		var text = el.value,
 			startIndices = [],
 			offset = 0;
 
